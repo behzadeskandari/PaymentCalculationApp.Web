@@ -10,6 +10,9 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using OvertimePolicies;
+using Microsoft.EntityFrameworkCore;
+using System.Runtime.InteropServices;
+using PaymentCalculationApp.Domain.Entities;
 
 namespace PaymentCalculation.Application.Services
 {
@@ -18,11 +21,13 @@ namespace PaymentCalculation.Application.Services
 
         public IMapper Mapper { get; }
         public IGenericRepository<Employee> EmployeeRepository { get; }
+        public IGenericRepository<MonthlySalary> MonthlySalaryRepository { get; }
         
-        public EmployeeService(IMapper mapper, IGenericRepository<Employee> employeeRepository)
+        public EmployeeService(IMapper mapper, IGenericRepository<Employee> employeeRepository, IGenericRepository<MonthlySalary> monthlySalaryRepository)
         {
             Mapper = mapper;
             EmployeeRepository = employeeRepository;
+            MonthlySalaryRepository = monthlySalaryRepository;
         }
 
         public async Task<int> CreateEmployeeAsync(EmployeeCreate employeeCreate)
@@ -38,6 +43,23 @@ namespace PaymentCalculation.Application.Services
         {
             var entity = await EmployeeRepository.GetByIdAsync(employeeDelete.id);
             EmployeeRepository.Delete(entity);
+            await EmployeeRepository.SaveChangesAsync();
+        }
+        public async Task DeleteEmployeeAsync(EmployeeDetails employeeDetails, DateTime targetMonth)
+        {
+            var entity = await EmployeeRepository.GetByIdAsync(employeeDetails.Id);
+            if (entity == null)
+            {
+                throw new Exception("Employee not found.");
+            }
+            var result = await MonthlySalaryRepository.GetAysnc(null, null, ms => ms.EmployeeId == employeeDetails.Id && ms.Month.Year == targetMonth.Year && ms.Month.Month == targetMonth.Month);
+
+            if (result == null)
+            {
+                throw new Exception("Information for the specified month not found.");
+            }
+            EmployeeRepository.Delete(entity);
+            MonthlySalaryRepository.DeleteRange(result);
             await EmployeeRepository.SaveChangesAsync();
         }
 
@@ -79,7 +101,7 @@ namespace PaymentCalculation.Application.Services
 
         }
 
-        public Task<double> CalculateSalaryEmployee(EmployeeCreate employeeCreate)
+        public double CalculateSalaryEmployee(EmployeeCreate employeeCreate)
         {
             
             OvertimePolicies.OvertimePolicies overtimePolicies = new();
@@ -87,10 +109,8 @@ namespace PaymentCalculation.Application.Services
                                            employeeCreate.RightToAttract + 
                                            employeeCreate.ReceiveRoundTripFees - overtimePolicies.CalculateOvertimePay(employeeCreate.RightToAttract, employeeCreate.BaseSalary);
 
-            return Task.Run(() =>
-            {
-                return PaymentSalaryResult;
-            });
+            
+           return PaymentSalaryResult;
         }
 
         public async Task<List<EmployeeList>> GetAllEmployeesAsync()
@@ -111,17 +131,45 @@ namespace PaymentCalculation.Application.Services
 
         }
 
-        public async Task UpdateEmployeeMonthAsync(DateTime month,int employeeId)
+        public async Task UpdateEmployeeMonthAsync(DateTime month,EmployeeDto employeeDto)
         {
-           var result =  EmployeeRepository.GetByIdAsync(employeeId);
+           var result =  EmployeeRepository.GetByIdAsync(employeeDto.Id);
 
             if (result is not null)
             {
                 var entity = Mapper.Map<Employee>(result);
-                entity.Month = month;
+                if (entity.Month == month)
+                {
+                    entity.StandardHours = employeeDto.StandardHours;
+                    entity.TotalHoursWorked = employeeDto.TotalHoursWorked;
+                    entity.FirstName = employeeDto.FirstName;
+                    entity.LastName = employeeDto.LastName;
+                    entity.BaseSalary = employeeDto.BaseSalary;
+                    entity.Month = employeeDto.Month;
+                    entity.RightToAttract = employeeDto.RightToAttract;
+                    entity.ReceiveRoundTripFees = employeeDto.ReceiveRoundTripFees;
+                    entity.OvertimeRate = employeeDto.OvertimeRate;
+                    var EmpUpdate =  Mapper.Map<EmployeeCreate>(employeeDto);
+
+                    var CalculateResult = CalculateSalaryEmployee(EmpUpdate);
+
+                    entity.MonthlySalaries = new List<MonthlySalary>()
+                    {
+                        new MonthlySalary()
+                        {
+                            Month = month,
+                            EmployeeId = employeeDto.Id,
+                            SalaryAmount = CalculateResult,
+                        }
+                    };
+                }
+
                 var entityUpdate = Mapper.Map<EmployeeUpdate>(entity);
                 await UpdateEmployeeAsync(entityUpdate);
             }
         }
+
+        
+
     }
 }

@@ -15,6 +15,8 @@ namespace PaymentCalculation.Domain.Repositories
     {
         private readonly ApplicationDbContext _context;
         private DbSet<T> DbSet { get; }
+
+        private readonly List<T> ListValues;
         public GenericRepository(ApplicationDbContext context)
         {
             _context = context;
@@ -27,6 +29,12 @@ namespace PaymentCalculation.Domain.Repositories
             DbSet.Remove(entity);
         }
 
+        public void DeleteRange(List<T> entity)
+        {
+            if (_context.Entry(entity).State == EntityState.Detached)
+                DbSet.AttachRange(entity);
+            DbSet.RemoveRange(entity);
+        }
 
         public async Task<List<T>> GetAysnc(int? skip, int? take, params Expression<Func<T, object>>[] includes)
         {

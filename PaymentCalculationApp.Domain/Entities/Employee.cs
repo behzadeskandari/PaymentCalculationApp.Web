@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PaymentCalculationApp.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,6 +26,10 @@ namespace PaymentCalculation.Domain.Entities
         public int RightToAttract { get; set; }
 
         public int ReceiveRoundTripFees { get; set; }
+
+        public ICollection<MonthlySalary> MonthlySalaries { get; set; }
+
+
     }
 
 }

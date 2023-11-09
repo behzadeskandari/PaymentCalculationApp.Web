@@ -1,10 +1,11 @@
-﻿using System;
+﻿using PaymentCalculationApp.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PaymentCalculation.Application.ViewModels
+namespace PaymentCalculation.Domain.Dtos.Employee
 {
     public class EmployeeDto
     {
@@ -24,7 +25,7 @@ namespace PaymentCalculation.Application.ViewModels
         public int RightToAttract { get; set; }
 
         public int ReceiveRoundTripFees { get; set; }
-
+        ICollection<MonthlySalary> MonthlySalaries { get; set; }
     }
 
 }

@@ -23,6 +23,7 @@ namespace PaymentCalculation.Domain.Repositories
         void Update(T entity);
 
         void Delete(T entity);
+        void DeleteRange(List<T> entity);
 
         Task SaveChangesAsync();
 

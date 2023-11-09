@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PaymentCalculation.Domain.Entities;
+using PaymentCalculationApp.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,11 @@ namespace PaymentCalculation.Infrastructure.Data.Contexts
         }
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            builder.Entity<MonthlySalary>()
+          .HasOne(ms => ms.Employee)
+          .WithMany(e => e.MonthlySalaries)
+          .HasForeignKey(ms => ms.EmployeeId);
+
 
             base.OnModelCreating(builder);
         }

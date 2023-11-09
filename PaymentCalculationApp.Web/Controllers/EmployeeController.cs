@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PaymentCalculation.Domain.Dtos.Employee;
 using PaymentCalculation.Domain.Entities;
 using PaymentCalculation.Domain.Repositories;
@@ -35,24 +36,58 @@ namespace PaymentCalculation.Controllers
         }
 
         [HttpPut("update/{employeeId}")]
-        public IActionResult UpdateEmployeeForMonth(int employeeId,[FromBody] DateTime month)
+        public IActionResult UpdateEmployeeForMonth([FromBody] DateTime month,EmployeeDto employeeDto)
         {
+
+
             // Retrieve the employee from your data store (e.g., database)
-            var existingEmployee = EmployeeService.GetEmployeeAsync(employeeId);
+            var existingEmployee = EmployeeService.GetEmployeeAsync(employeeDto.Id);
 
             if (existingEmployee == null)
             {
-                return NotFound($"Employee with ID {employeeId} not found.");
+                return NotFound($"Employee with ID {employeeDto.Id} not found.");
             }
 
             
             // Update the existing employee's information for the specified month
-            EmployeeService.UpdateEmployeeMonthAsync(month, employeeId);
+            EmployeeService.UpdateEmployeeMonthAsync(month, employeeDto);
             
             // Save the updated information to your data store
 
             return Ok(existingEmployee); // Return the updated employee as confirmation
         }
+
+
+        [HttpDelete("delete-info/{employeeId}/{targetMonth}")]
+        public IActionResult DeleteEmployeeInfoForMonth(int employeeId, DateTime targetMonth)
+        {
+            // Retrieve the employee from the database based on the employeeId
+            var existingEmployee = EmployeeService.GetEmployeeAsync(employeeId);
+
+            if (existingEmployee is null)
+            {
+                return NotFound("Employee not found.");
+            }
+
+
+            EmployeeService.DeleteEmployeeAsync(existingEmployee.Result)
+
+            // Query the database for the employee's information for the specified month
+            var employeeInfoForMonth = _context.MonthlySalaries
+                .FirstOrDefault(ms => ms.EmployeeId == employeeId && ms.Month.Year == targetMonth.Year && ms.Month.Month == targetMonth.Month);
+
+            if (employeeInfoForMonth == null)
+            {
+                return NotFound("Information for the specified month not found.");
+            }
+
+            // Delete the record
+            _context.MonthlySalaries.Remove(employeeInfoForMonth);
+            _context.SaveChanges();
+
+            return NoContent();
+        }
+
 
 
         [HttpDelete]

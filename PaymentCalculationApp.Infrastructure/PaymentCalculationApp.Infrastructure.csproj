@@ -9,7 +9,6 @@
   <ItemGroup>
     <Folder Include="CossCutting\Identity\" />
     <Folder Include="CossCutting\Logging\" />
-    <Folder Include="Data\Repositories\" />
     <Folder Include="ExternalServices\" />
     <Folder Include="Services\" />
   </ItemGroup>
