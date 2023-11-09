@@ -38,5 +38,7 @@ namespace PaymentCalculation.Infrastructure.Data.Contexts
 
        
         public DbSet<Employee> Employees { get; set; }
+        public DbSet<MonthlySalary> MonthlySalary { get; set; }
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
     }
 }

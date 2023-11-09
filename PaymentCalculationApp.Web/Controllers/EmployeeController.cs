@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PaymentCalculation.Domain.Dtos.Employee;
 using PaymentCalculation.Domain.Entities;
@@ -12,10 +13,12 @@ namespace PaymentCalculation.Controllers
     [Route("[controller]")]
     public class EmployeeController : ControllerBase
     {
+        public IMapper Mapper { get; }
         private IEmployeeService EmployeeService { get; }
 
-        public EmployeeController(IEmployeeService employeeService)
+        public EmployeeController(IMapper mapper,IEmployeeService employeeService)
         {
+            Mapper = mapper;
             EmployeeService = employeeService;
         }
         [HttpPost]
@@ -68,24 +71,12 @@ namespace PaymentCalculation.Controllers
             {
                 return NotFound("Employee not found.");
             }
+            var entity = Mapper.Map<EmployeeDelete>(existingEmployee.Result);
 
 
-            EmployeeService.DeleteEmployeeAsync(existingEmployee.Result)
-
-            // Query the database for the employee's information for the specified month
-            var employeeInfoForMonth = _context.MonthlySalaries
-                .FirstOrDefault(ms => ms.EmployeeId == employeeId && ms.Month.Year == targetMonth.Year && ms.Month.Month == targetMonth.Month);
-
-            if (employeeInfoForMonth == null)
-            {
-                return NotFound("Information for the specified month not found.");
-            }
-
-            // Delete the record
-            _context.MonthlySalaries.Remove(employeeInfoForMonth);
-            _context.SaveChanges();
-
-            return NoContent();
+            var result = EmployeeService.DeleteEmployeeAsync(entity);
+           
+            return Ok(result);
         }
 
 
@@ -128,7 +119,7 @@ namespace PaymentCalculation.Controllers
         [Route("Create")]
         public async Task<IActionResult> CalculateSalaryEmployee(EmployeeCreate addressCreate)
         {
-            var result = await EmployeeService.CalculateSalaryEmployee(addressCreate);
+            var result =  EmployeeService.CalculateSalaryEmployee(addressCreate);
 
             return Ok(result);
 
